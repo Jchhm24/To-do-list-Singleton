@@ -1,17 +1,15 @@
-type Task = {
-    id : number,
-    title : string,
-    completed : boolean
-}
+import { ref, type Ref} from 'vue'
+import TaskFactory , {type Task} from '@/factories/TaskFactory'
 
 class TaskManager {
 
     private static instance : TaskManager
-    private tasks : Task[] = []
+    private tasks : Ref<Task[]> = ref([])
+    private listeners : Array< () => void> = []
 
     private constructor() {}
 
-    // Método para obtener la única instancia de la clase
+    //Método para obtener la única instancia de la clase TaskManager
     public static getInstance() : TaskManager {
         // Si la instancia no existe entonces lo creamos
         if(!TaskManager.instance) {
@@ -20,24 +18,54 @@ class TaskManager {
         return TaskManager.instance
     }
 
-    public addTask(task: Task): void {
-        this.tasks.push(task)
+    public addTask(task: string): void {
+        const newTask = TaskFactory.createTask(task)
+        this.tasks.value.push(newTask)
+        this.notify()
+
     }
 
     public deleteTask(taskId: number): void {
-        this.tasks = this.tasks.filter(
-            tasks => tasks.id !== taskId
+        this.tasks.value = this.tasks.value.filter(
+            task => task.id !== taskId
         )
+        this.notify()
     }
 
     public checkTask(taskId: number): void {
-        this.tasks = this.tasks.map(
-            task => task.id === taskId ? {...task, completed: !task.completed} : task
+        this.tasks.value = this.tasks.value.map(
+            task => {
+                if(task.id === taskId) {
+                    task.completed = !task.completed
+                }
+                return task
+            }
         )
     }
 
-    public getTasks() : Task[]{
+    public getTasks() : Ref<Task[]> {
         return this.tasks
+    }
+
+    // TODO: Usando los observadores
+    // listener para observar los cambios en la lista de tareas
+    public subscribe(listener: () => void):  void{
+        this.listeners.push(listener)
+    }
+
+    // listener para dejar de observar los cambios en la lista de tareas
+    public unsubscribe(listener : () => void): void {
+        this.listeners =  this.listeners.filter(
+            l => l !== listener
+        )
+    }
+
+    // TODO: Fin de los observadores
+
+
+    // Este método es para notificar a los listeners que se ha actualizado la lista de tareas
+    private notify(): void {
+        this.listeners.forEach(listener => listener())
     }
 
 }

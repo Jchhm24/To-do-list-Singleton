@@ -32,18 +32,30 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import {taskManager} from '@/services/taskManager'
 import TaskItem from '@/components/TaskItem.vue'
+import type { Task } from '@/factories/TaskFactory'
 
-const tasks = ref([] as Task[])
+const tasks = ref<Task[]>([] )
 
-// Hacemos que el componente se monte y obtenga las tareas guardadas,
-// además de que se actualice cada vez que se agrega una nueva tarea
+const updateTasks = () => {
+  tasks.value = [...taskManager.getTasks().value]
+}
+
+// Suscribirse a los cambios en las tareas cuando el componente se monta
 onMounted(() => {
-  tasks.value = taskManager.getTasks()
+  taskManager.subscribe(updateTasks)
+  updateTasks()
 })
 
+// Cancelar la suscripción cuando el componente se desmonta
+onUnmounted(() => {
+  taskManager.unsubscribe(updateTasks)
+})
+
+
+// TODO: Variables y funciones para las tareas
 const task= ref<string>('')
 
 const sendTask = () => {
@@ -53,24 +65,16 @@ const sendTask = () => {
     return
   }
 
-  const newTask = {
-    id: Date.now(),
-    title: task.value,
-    completed: false
-  }
-  taskManager.addTask(newTask)
-  tasks.value = [...taskManager.getTasks()]
+  taskManager.addTask(task.value)
   task.value = ''
 }
 
 const deleteTask = (id:number) => {
-  taskManager.deleteTask(id)
-  tasks.value = [...taskManager.getTasks()]
+  taskManager.deleteTask(id)  
 }
 
 const checkTask = (id: number) => {
   taskManager.checkTask(id)
-  tasks.value = [...taskManager.getTasks()]
 }
 
 const thereTask = computed(() => {
