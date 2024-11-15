@@ -18,8 +18,8 @@ class TaskManager {
         return TaskManager.instance
     }
 
-    public addTask(task: string): void {
-        const newTask = TaskFactory.createTask(task)
+    public addTask(title: string): void {
+        const newTask = TaskFactory.createTask(title)
         this.tasks.value.push(newTask)
         this.notify()
 
